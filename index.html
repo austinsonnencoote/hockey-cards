@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏒 Hockey Card Vault</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/client/quick.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--ice:#1a1a2e;--red:#c8102e;--red2:#8b0b1f;--navy:#f0f4f8;--navy2:#e4ecf4;--navy3:#dce6f0;--blue:#c8d8e8;--accent:#1565c0;--gold:#ffd700;--muted:#4a6a8a;--dim:#7a9ab8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:linear-gradient(160deg,#f0f5fb 0%,#e4eef8 40%,#dce8f4 70%,#edf3fa 100%);color:var(--ice);min-height:100vh;overflow-x:hidden;}
+
+/* ICE RINK BACKGROUND */
+#rink-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.18;}
+
+/* LAYOUT */
+.page{position:relative;z-index:1;}
+
+/* HEADER */
+header{background:linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,246,255,0.95));border-bottom:3px solid var(--red);backdrop-filter:blur(8px);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.logo{font-family:'Bebas Neue',cursive;font-size:2.6rem;letter-spacing:3px;background:linear-gradient(135deg,#1a1a2e,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.logo-sub{font-size:0.7rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.header-badge{background:var(--red);color:#fff;font-size:0.72rem;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);background:rgba(255,255,255,0.85);border-bottom:1px solid #c8d8e8;backdrop-filter:blur(6px);}
+.stat{padding:18px 16px;text-align:center;border-right:1px solid #dce6f0;}
+.stat:last-child{border-right:none;}
+.stat-icon{font-size:1rem;opacity:.6;margin-bottom:2px;}
+.stat-val{font-family:'Bebas Neue',cursive;font-size:2rem;color:var(--accent);letter-spacing:1px;line-height:1;}
+.stat-lbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;}
+
+/* CONTROLS */
+.controls{position:sticky;top:0;z-index:20;background:rgba(255,255,255,0.92);border-bottom:1px solid #c8d8e8;backdrop-filter:blur(10px);padding:12px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.search-wrap{position:relative;flex:0 0 200px;}
+.search-wrap input{width:100%;background:#f0f4f8;border:1px solid #b8cce0;border-radius:8px;color:var(--ice);padding:7px 12px 7px 30px;font-size:.8rem;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--dim);}
+.s-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:.85rem;opacity:.5;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;flex:1;}
+.chip{padding:4px 12px;border-radius:20px;border:1px solid #b8cce0;background:transparent;color:var(--muted);cursor:pointer;font-size:.72rem;font-weight:500;transition:all .15s;white-space:nowrap;}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:700;}
+.sort-wrap select{background:#f0f4f8;border:1px solid #b8cce0;color:var(--ice);padding:7px 10px;border-radius:8px;font-size:.76rem;cursor:pointer;outline:none;}
+
+/* CHARTS */
+.charts-section{padding:20px 24px 0;}
+.charts-title{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;margin-bottom:14px;color:var(--ice);}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-box{background:rgba(255,255,255,0.9);border:1px solid #c8d8e8;border-radius:12px;padding:16px;backdrop-filter:blur(4px);box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.chart-box h3{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
+.chart-box canvas{max-height:220px;}
+
+/* TOP 10 */
+.top10{margin:20px 24px 0;background:rgba(255,255,255,0.9);border:1px solid #c8d8e8;border-radius:12px;overflow:hidden;backdrop-filter:blur(4px);box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.top10-head{background:linear-gradient(90deg,var(--red2),var(--red));padding:12px 18px;display:flex;align-items:center;gap:8px;}
+.top10-title{font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;}
+.top10-sub{font-size:.7rem;color:rgba(255,255,255,.55);margin-left:auto;}
+.t10r{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #dce6f0;cursor:pointer;transition:background .15s;}
+.t10r:last-child{border-bottom:none;}
+.t10r:hover{background:rgba(21,101,192,.04);}
+.t10-rank{font-family:'Bebas Neue',cursive;font-size:1.1rem;min-width:28px;text-align:center;color:var(--dim);}
+.t10-info{flex:1;}
+.t10-player{font-weight:700;font-size:.88rem;}
+.t10-meta{font-size:.68rem;color:var(--muted);margin-top:1px;}
+.t10-val{font-family:'Bebas Neue',cursive;font-size:1.3rem;color:var(--accent);}
+
+/* SECTION HEAD */
+.sec-head{padding:18px 24px 8px;display:flex;align-items:center;gap:10px;position:relative;z-index:1;}
+.sec-title{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;}
+.sec-count{background:var(--navy3);border:1px solid #2a4a6b;color:var(--muted);font-size:.68rem;padding:2px 9px;border-radius:10px;}
+.flip-hint-global{margin-left:auto;font-size:.68rem;color:var(--dim);}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;padding:0 24px 32px;position:relative;z-index:1;}
+
+/* CARD FLIP */
+.cw{perspective:1000px;cursor:pointer;}
+.ci{position:relative;width:100%;aspect-ratio:2.5/3.5;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);border-radius:11px;}
+.cw:hover .ci{transform:translateY(-5px) rotateY(6deg);}
+.cw.flipped .ci{transform:rotateY(180deg);}
+.cf,.cb{position:absolute;inset:0;border-radius:11px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;}
+
+/* FRONT */
+.cf{background:linear-gradient(150deg,rgba(255,255,255,0.97),rgba(240,246,255,0.95));border:1px solid #c8d8e8;display:flex;flex-direction:column;padding:13px;transition:border-color .2s,box-shadow .2s;}
+.cw:hover .cf{border-color:var(--cc,var(--accent));box-shadow:0 0 18px rgba(21,101,192,.08),0 10px 28px rgba(0,0,0,.12);}
+.stripe{position:absolute;top:0;left:0;right:0;height:3px;background:var(--cc,var(--accent));border-radius:11px 11px 0 0;}
+.shine{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.06) 0%,transparent 50%);border-radius:11px;pointer-events:none;}
+.c-img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:7px;margin-bottom:7px;border:1px solid rgba(79,195,247,.15);}
+.c-img-ph{width:100%;aspect-ratio:3/2;border-radius:7px;margin-bottom:7px;background:linear-gradient(135deg,rgba(79,195,247,.06),rgba(20,50,90,.5));border:1px dashed rgba(79,195,247,.18);display:flex;align-items:center;justify-content:center;font-size:1.6rem;opacity:.5;}
+.c-type{font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--cc,var(--accent));margin-top:2px;margin-bottom:3px;}
+.c-player{font-weight:800;font-size:.88rem;line-height:1.2;color:#1a1a2e;}
+.c-set{font-size:.62rem;color:var(--muted);margin:3px 0 6px;}
+.c-bot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:auto;}
+.c-avg{font-family:'Bebas Neue',cursive;font-size:1.45rem;color:var(--accent);line-height:1;}
+.c-avg-lbl{font-size:.56rem;color:var(--dim);}
+.c-rank{font-size:.7rem;font-weight:700;}
+.num-pill{display:inline-block;margin-bottom:4px;font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:8px;background:rgba(200,16,46,.12);border:1px solid rgba(200,16,46,.35);color:#ff8a9a;}
+.fhint{position:absolute;bottom:8px;right:9px;font-size:.56rem;color:var(--dim);opacity:0;transition:opacity .2s;}
+.cw:hover .fhint{opacity:1;}
+
+/* BACK */
+.cb{background:linear-gradient(145deg,#edf3fa,#f5f9ff);border:1px solid #c8d8e8;transform:rotateY(180deg);padding:14px;display:flex;flex-direction:column;gap:6px;}
+.cb-head{font-family:'Bebas Neue',cursive;font-size:.95rem;letter-spacing:2px;color:var(--accent);border-bottom:1px solid #c8d8e8;padding-bottom:7px;line-height:1.2;}
+.cb-row{display:flex;justify-content:space-between;align-items:center;font-size:.65rem;gap:6px;}
+.cb-lbl{color:var(--dim);white-space:nowrap;}
+.cb-val{color:#1a1a2e;font-weight:600;text-align:right;font-size:.63rem;}
+.cb-note{flex:1;font-size:.58rem;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;margin-top:2px;}
+.cb-valbig{text-align:center;margin-top:auto;padding-top:7px;border-top:1px solid #c8d8e8;}
+.cb-valbig .bv{font-family:'Bebas Neue',cursive;font-size:1.6rem;color:var(--accent);}
+.cb-valbig .br{font-size:.58rem;color:var(--dim);}
+.cb-bhint{font-size:.56rem;color:var(--dim);text-align:center;}
+
+/* NO RESULTS */
+.no-res{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--dim);}
+.no-res-icon{font-size:2.5rem;margin-bottom:12px;}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.mo.open{display:flex;}
+.mb{background:linear-gradient(145deg,#ffffff,#f0f6ff);border:1px solid #c8d8e8;border-radius:16px;width:100%;max-width:480px;position:relative;overflow:hidden;animation:min .25s cubic-bezier(.4,0,.2,1);}
+@keyframes min{from{opacity:0;transform:scale(.93) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.mb-banner{padding:18px 22px;position:relative;overflow:hidden;}
+.mb-banner::before{content:'🏒';position:absolute;right:-8px;top:-12px;font-size:70px;opacity:.1;}
+.mb-close{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.25);border:none;color:#fff;font-size:.9rem;cursor:pointer;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.mb-close:hover{background:rgba(0,0,0,.5);}
+.mb-type{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.75;}
+.mb-player{font-family:'Bebas Neue',cursive;font-size:1.9rem;letter-spacing:2px;line-height:1.1;margin-top:3px;}
+.mb-set{font-size:.75rem;opacity:.7;margin-top:3px;}
+.mb-body{padding:18px 22px 22px;}
+.mb-vrow{display:flex;align-items:flex-end;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #dce6f0;}
+.mb-avg{font-family:'Bebas Neue',cursive;font-size:2.8rem;color:var(--accent);letter-spacing:2px;line-height:1;}
+.mb-avg-lbl{font-size:.65rem;color:var(--dim);margin-bottom:5px;}
+.mb-range{font-size:.72rem;color:var(--muted);}
+.mb-rank{margin-left:auto;background:rgba(21,101,192,.07);border:1px solid rgba(21,101,192,.18);color:var(--accent);font-size:.72rem;font-weight:700;padding:5px 12px;border-radius:16px;white-space:nowrap;}
+.mb-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.mb-field label{font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);display:block;margin-bottom:2px;}
+.mb-field span{font-size:.84rem;color:#1a1a2e;font-weight:500;}
+.mb-note{background:rgba(0,0,0,.02);border:1px solid #dce6f0;border-radius:8px;padding:12px;font-size:.75rem;color:var(--muted);line-height:1.6;}
+.mb-disc{font-size:.63rem;color:var(--dim);margin-top:10px;line-height:1.5;}
+
+footer{position:relative;z-index:1;text-align:center;padding:18px;font-size:.67rem;color:var(--dim);border-top:1px solid #dce6f0;}
+
+/* ADD CARD BUTTON */
+.add-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.76rem;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:background .15s;white-space:nowrap;}
+.add-btn:hover{background:var(--red2);}
+
+/* ADD CARD FORM MODAL */
+.fm{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.fm.open{display:flex;}
+.fmb{background:#fff;border:1px solid #c8d8e8;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;position:relative;animation:min .25s cubic-bezier(.4,0,.2,1);}
+.fm-head{background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;padding:18px 22px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;}
+.fm-head h2{font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;}
+.fm-close{background:rgba(0,0,0,.2);border:none;color:#fff;font-size:.9rem;cursor:pointer;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.fm-close:hover{background:rgba(0,0,0,.4);}
+.fm-body{padding:20px 22px;}
+.fm-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.fm-row.full{grid-template-columns:1fr;}
+.fm-field{display:flex;flex-direction:column;gap:4px;}
+.fm-field label{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:600;}
+.fm-field input,.fm-field textarea,.fm-field select{background:#f4f7fa;border:1px solid #c8d8e8;border-radius:7px;padding:8px 10px;font-size:.82rem;color:#1a1a2e;outline:none;font-family:inherit;transition:border-color .2s;}
+.fm-field input:focus,.fm-field textarea:focus,.fm-field select:focus{border-color:var(--accent);}
+.fm-field textarea{resize:vertical;min-height:70px;}
+.fm-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #dce6f0;}
+.fm-save{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:.82rem;font-weight:700;cursor:pointer;}
+.fm-save:hover{background:var(--red2);}
+.fm-cancel{background:#f0f4f8;color:var(--muted);border:1px solid #c8d8e8;border-radius:8px;padding:9px 16px;font-size:.82rem;cursor:pointer;}
+.fm-cancel:hover{background:#e4ecf4;}
+.fm-saving{opacity:.6;pointer-events:none;}
+
+/* DELETE BUTTON in modal */
+.mb-delete{margin-top:10px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 14px;font-size:.75rem;font-weight:700;cursor:pointer;width:100%;}
+.mb-delete:hover{background:#fecaca;}
+
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr 1fr;}
+  .charts-grid{grid-template-columns:1fr;}
+  .logo{font-size:1.8rem;}
+  .mb-fields{grid-template-columns:1fr;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+}
+</style>
+</head>
+<body>
+
+<!-- ICE RINK SVG BACKGROUND -->
+<svg id="rink-bg" viewBox="0 0 200 85" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ice surface -->
+  <rect width="200" height="85" fill="#b8d8f0" rx="12"/>
+  <!-- Boards outline -->
+  <rect x="1" y="1" width="198" height="83" fill="none" stroke="#e0e8f0" stroke-width="2" rx="10"/>
+  <!-- Red center line -->
+  <line x1="100" y1="0" x2="100" y2="85" stroke="#c8102e" stroke-width="1.5"/>
+  <!-- Blue lines -->
+  <line x1="66" y1="0" x2="66" y2="85" stroke="#4fc3f7" stroke-width="1.2"/>
+  <line x1="134" y1="0" x2="134" y2="85" stroke="#4fc3f7" stroke-width="1.2"/>
+  <!-- Center circle -->
+  <circle cx="100" cy="42.5" r="15" fill="none" stroke="#c8102e" stroke-width="1"/>
+  <circle cx="100" cy="42.5" r="1.5" fill="#c8102e"/>
+  <!-- Goal creases -->
+  <path d="M 4 35 A 8 8 0 0 1 4 50" fill="none" stroke="#4fc3f7" stroke-width=".8"/>
+  <line x1="4" y1="35" x2="8" y2="35" stroke="#c8102e" stroke-width=".8"/>
+  <line x1="4" y1="50" x2="8" y2="50" stroke="#c8102e" stroke-width=".8"/>
+  <path d="M 196 35 A 8 8 0 0 0 196 50" fill="none" stroke="#4fc3f7" stroke-width=".8"/>
+  <line x1="196" y1="35" x2="192" y2="35" stroke="#c8102e" stroke-width=".8"/>
+  <line x1="196" y1="50" x2="192" y2="50" stroke="#c8102e" stroke-width=".8"/>
+  <!-- Face-off circles -->
+  <circle cx="31" cy="21" r="8" fill="none" stroke="#c8102e" stroke-width=".8"/>
+  <circle cx="31" cy="21" r="1" fill="#c8102e"/>
+  <circle cx="31" cy="64" r="8" fill="none" stroke="#c8102e" stroke-width=".8"/>
+  <circle cx="31" cy="64" r="1" fill="#c8102e"/>
+  <circle cx="169" cy="21" r="8" fill="none" stroke="#c8102e" stroke-width=".8"/>
+  <circle cx="169" cy="21" r="1" fill="#c8102e"/>
+  <circle cx="169" cy="64" r="8" fill="none" stroke="#c8102e" stroke-width=".8"/>
+  <circle cx="169" cy="64" r="1" fill="#c8102e"/>
+  <!-- Neutral zone dots -->
+  <circle cx="66" cy="21" r="1" fill="#4fc3f7"/>
+  <circle cx="66" cy="64" r="1" fill="#4fc3f7"/>
+  <circle cx="134" cy="21" r="1" fill="#4fc3f7"/>
+  <circle cx="134" cy="64" r="1" fill="#4fc3f7"/>
+</svg>
+
+<div class="page">
+<header>
+  <div>
+    <div class="logo">🏒 Card Vault</div>
+    <div class="logo-sub">Personal Hockey Card Collection</div>
+  </div>
+  <div class="header-badge" id="hbadge">89 Cards</div>
+</header>
+
+<div class="stats" id="statsBar"></div>
+
+<div class="controls" id="controls">
+  <div class="search-wrap">
+    <span class="s-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search player..." oninput="renderCards()">
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="sort-wrap">
+    <select id="sortSel" onchange="renderCards()">
+      <option value="vd">💰 Value: High → Low</option>
+      <option value="va">💰 Value: Low → High</option>
+      <option value="pa">🔤 Player A → Z</option>
+      <option value="yd">📅 Newest First</option>
+      <option value="ya">📅 Oldest First</option>
+    </select>
+  </div>
+  <button class="add-btn" onclick="openAddForm()">+ Add Card</button>
+</div>
+
+<!-- CHARTS -->
+<div class="charts-section" id="chartsSection">
+  <div class="charts-title">📊 Collection Analytics</div>
+  <div class="charts-grid">
+    <div class="chart-box">
+      <h3>Value by Card Type</h3>
+      <canvas id="chartType"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Cards by Year</h3>
+      <canvas id="chartYear"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- TOP 10 -->
+<div class="top10" style="margin-bottom:0" id="top10"></div>
+
+<!-- GRID -->
+<div class="sec-head">
+  <div class="sec-title" id="secTitle">All Cards</div>
+  <div class="sec-count" id="secCount"></div>
+  <div class="flip-hint-global">click card to flip • click row in Top 10 for details</div>
+</div>
+<div class="grid" id="grid"></div>
+
+<!-- MODAL -->
+<div class="mo" id="mo" onclick="handleMO(event)">
+  <div class="mb" id="mb"></div>
+</div>
+
+<footer>⚠️ Values are estimates based on comparable sales data up to Aug 2025. Verify on 130point.com or eBay sold listings. &nbsp;|&nbsp; 🏒 Card Vault</footer>
+</div>
+
+<!-- ADD CARD FORM MODAL -->
+<div class="fm" id="fm" onclick="handleFM(event)">
+  <div class="fmb">
+    <div class="fm-head">
+      <h2>🏒 Add New Card</h2>
+      <button class="fm-close" onclick="closeAddForm()">✕</button>
+    </div>
+    <div class="fm-body">
+      <div class="fm-row">
+        <div class="fm-field">
+          <label>Player *</label>
+          <input type="text" id="f-player" placeholder="e.g. Connor McDavid" autocomplete="off">
+        </div>
+        <div class="fm-field">
+          <label>Card Type *</label>
+          <input type="text" id="f-type" placeholder="e.g. Young Guns" list="type-list" autocomplete="off">
+          <datalist id="type-list"></datalist>
+        </div>
+      </div>
+      <div class="fm-row">
+        <div class="fm-field">
+          <label>Set *</label>
+          <input type="text" id="f-set" placeholder="e.g. 2024-25 UD Series 1">
+        </div>
+        <div class="fm-field">
+          <label>Year *</label>
+          <input type="number" id="f-year" placeholder="e.g. 2024" min="1900" max="2100">
+        </div>
+      </div>
+      <div class="fm-row">
+        <div class="fm-field">
+          <label>Low Value ($) *</label>
+          <input type="number" id="f-low" placeholder="e.g. 10" min="0">
+        </div>
+        <div class="fm-field">
+          <label>High Value ($) *</label>
+          <input type="number" id="f-high" placeholder="e.g. 25" min="0">
+        </div>
+      </div>
+      <div class="fm-row">
+        <div class="fm-field">
+          <label>Condition</label>
+          <input type="text" id="f-cond" placeholder="e.g. Raw NM-MT" value="Raw NM-MT">
+        </div>
+        <div class="fm-field">
+          <label>Card # / Serial</label>
+          <input type="text" id="f-num" placeholder="e.g. 042/250 (optional)">
+        </div>
+      </div>
+      <div class="fm-row full">
+        <div class="fm-field">
+          <label>Notes</label>
+          <textarea id="f-note" placeholder="Player background, set context, value drivers..."></textarea>
+        </div>
+      </div>
+      <div id="fm-err" style="color:#991b1b;font-size:.75rem;display:none;margin-top:4px;"></div>
+      <div class="fm-actions">
+        <button class="fm-cancel" onclick="closeAddForm()">Cancel</button>
+        <button class="fm-save" id="fm-save-btn" onclick="saveCard()">Save Card</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TC={
+  'Young Guns':'#4fc3f7','Canvas Young Guns':'#29b6f6','Young Guns Renewed':'#ff7043',
+  'Young Guns /250':'#ab47bc','Outburst Young Guns':'#26c6da','Marquee Rookies':'#66bb6a',
+  'Portraits Rookies':'#ec407a','Rookie Materials':'#ffa726','SPx Rookie':'#7e57c2',
+  'SPx F/X':'#9575cd','SPx Silver Spectrum':'#b0bec5','Bound for Glory':'#7986cb',
+  'Welcome Aboard':'#ef5350','Checklist':'#78909c','Team Canada Duos':'#e53935',
+  'Tim Hortons Duos':'#ff7043','Vintage':'#ffd54f','Allure Rookie':'#66bb6a',
+  'Allure Base':'#80cbc4','Allure Yellow Taxi':'#fdd835','Colour Flow':'#e040fb','Electric City':'#ffb300',
+  'Ooh-Là-Là':'#26a69a','Fluorescence':'#69f0ae','On Tour':'#42a5f5',
+  'Playlist':'#f06292',"200' x 85'":'#a1887f','Deluxe':'#ffd54f',
+  'SPx Base':'#5c6bc0',
+  'Debut Dates':'#26c6da',
+  'Artifacts Sky Blue':'#29b6f6',
+  'Bowman Prospect':'#43a047',
+  'Young Guns Teammates':'#00bcd4',
+};
+
+const CARDS=[
+  {id:1,player:'Ryan Ufko',type:'Canvas Young Guns',set:'2025-26 UD Series 2',year:2025,low:8,high:15,cond:'Raw NM-MT',num:'C-217',note:'Rising Carolina Hurricanes defenseman prospect. Canvas YG trades at ~40-60% discount vs base YG. 2025-26 past knowledge cutoff.'},
+  {id:2,player:'Isaac Howard',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:20,high:50,cond:'Raw NM-MT',num:null,note:'2023 first-round pick, 16th overall, St. Louis Blues. High-profile prospect. Past knowledge cutoff — verify current pricing.'},
+  {id:3,player:'Devin Kaplan',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:8,high:20,cond:'Raw NM-MT',num:null,note:'2023 second-round pick, 36th overall, New Jersey Devils. Solid prospect, trades below first-rounders.'},
+  {id:4,player:'Wyatt Aamodt',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile defenseman prospect. Limited market data — conservative estimate.'},
+  {id:5,player:'Moritz Seider',type:'Young Guns Renewed',set:'2024-25 UD Series 2',year:2024,low:5,high:15,cond:'Raw NM-MT',num:'#469',note:'2021-22 Calder Trophy winner, Detroit Red Wings star defenseman. YG Renewed — original 2021-22 YG is far more valuable.'},
+  {id:6,player:'Domenick Fensore',type:'Young Guns /250',set:'2025-26 UD Series 2',year:2025,low:10,high:25,cond:'Raw NM-MT',num:'042/250',note:'2020 3rd round pick, Carolina Hurricanes. Numbered /250 parallel adds 2-4x premium over base YG. Print run is the primary value driver.'},
+  {id:7,player:'Ken Dryden',type:'Vintage',set:'1973-74 Topps',year:1973,low:40,high:100,cond:'Raw NM-MT',num:'#155',note:'Hall of Fame Montreal Canadiens goaltender. 6 Stanley Cups, 5 Vezina Trophies. Vintage Topps in NM-MT is increasingly scarce.'},
+  {id:8,player:'Oskar Bäck',type:'Young Guns',set:'2024-25 UD Series 2',year:2024,low:5,high:15,cond:'Raw NM-MT',num:null,note:'2022 second-round pick, 46th overall, Detroit Red Wings. Swedish forward developing in Sweden.'},
+  {id:9,player:'Oliver Kapanen',type:'Young Guns',set:'2024-25 UD Series 2',year:2024,low:15,high:35,cond:'Raw NM-MT',num:null,note:'2022 first-round pick, 20th overall, Columbus Blue Jackets. Son of former NHLer Sami Kapanen.'},
+  {id:10,player:'Matthew Coronato',type:'Canvas Young Guns',set:'2023-24 UD Series 1',year:2023,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2022 first-round pick, 13th overall, Calgary Flames. Canvas YG Series 1 — within knowledge cutoff.'},
+  {id:11,player:'Jack Hughes',type:'Young Guns Renewed',set:'2024-25 UD Series 2',year:2024,low:20,high:50,cond:'Raw NM-MT',num:null,note:'2019 #1 overall pick, New Jersey Devils. NHL superstar. YG Renewed commands strong demand.'},
+  {id:12,player:'Rutger McGroarty',type:'Young Guns',set:'2024-25 UD Series 2',year:2024,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2022 first-round pick, 14th overall. Traded Winnipeg → Pittsburgh Penguins. Power forward out of Michigan.'},
+  {id:13,player:'Samuel Honzek',type:'Canvas Young Guns',set:'2024-25 UD Series 2',year:2024,low:6,high:18,cond:'Raw NM-MT',num:null,note:'2023 first-round pick, 16th overall, Calgary Flames. Big Slovak winger. Canvas format applies ~40% discount vs base YG.'},
+  {id:14,player:'Braden Cootes',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:15,player:'Leon Draisaitl',type:'Young Guns Renewed',set:'2024-25 UD Series 2',year:2024,low:30,high:70,cond:'Raw NM-MT',num:null,note:'Hart Trophy winner 2019-20, Edmonton Oilers superstar. One of the NHLs best — among the most valuable YG Renewed cards.'},
+  {id:16,player:'Adam Fox',type:'Young Guns Renewed',set:'2024-25 UD Series 2',year:2024,low:20,high:45,cond:'Raw NM-MT',num:null,note:'Norris Trophy winner 2020-21, NY Rangers elite defenseman. Strong collector demand.'},
+  {id:17,player:'Caufield / Hughes',type:'Checklist',set:'2025-26 UD Series 2',year:2025,low:2,high:6,cond:'Raw NM-MT',num:null,note:'Cole Caufield & Jack Hughes checklist card. Checklists are generally low value regardless of featured players.'},
+  {id:18,player:'Zac Joines',type:'Portraits Rookies',set:'2021-22 UD Series 2',year:2021,low:10,high:25,cond:'Raw NM-MT',num:'095/99',note:'Lower-profile player, but the /99 serial number is the primary value driver. Scarcity commands a premium.'},
+  {id:19,player:'Yzerman / Shanahan',type:'Team Canada Duos',set:'2025-26 UD Series 2',year:2025,low:10,high:25,cond:'Raw NM-MT',num:null,note:'Two Detroit Red Wings Hall of Famers. Yzerman (current Red Wings GM) is especially popular with collectors.'},
+  {id:20,player:'Yzerman / Shanahan',type:'Tim Hortons Duos',set:'2025-26 Tim Hortons',year:2025,low:3,high:8,cond:'Raw NM-MT',num:'CO-11',note:'Tim Hortons cards are mass-distributed in Canadian coffee cups, keeping values modest even for big names.'},
+  {id:21,player:'Lane Hutson',type:'Welcome Aboard',set:'2024-25 UD Series 2',year:2024,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2nd round pick (62nd) who became one of the most exciting young defensemen in the NHL. Welcome Aboard insert subset.'},
+  {id:22,player:'Macklin Celebrini',type:'Welcome Aboard',set:'2024-25 UD Series 2',year:2024,low:30,high:80,cond:'Raw NM-MT',num:null,note:'2024 #1 overall pick, San Jose Sharks. Most hyped prospect in recent memory. Cards across all formats command premiums.'},
+  {id:23,player:'Devon Levi',type:'Young Guns',set:'2023-24 UD Series 1',year:2023,low:15,high:35,cond:'Raw NM-MT',num:null,note:'7th round pick (212th!) who became Buffalo Sabres starter. Great underdog story drives collector demand. Goalie YGs carry a premium.'},
+  {id:24,player:'Macklin Celebrini',type:'SPx Rookie',set:'2024-25 SPx Hockey',year:2024,low:20,high:60,cond:'Raw NM-MT',num:'#160',note:'#1 overall pick in a premium product. SPx more scarce than Series 1/2. Even base SPx of top picks command strong prices.'},
+  {id:25,player:'Lane Hutson',type:'SPx F/X',set:'2024-25 SPx Hockey',year:2024,low:20,high:50,cond:'Raw NM-MT',num:'HV-32',note:'HV prefix = HoloVision, a premium die-cut subset within SPx. More scarce than base SPx rookies.'},
+  {id:26,player:'Hughes / Knies',type:'Checklist',set:'2023-24 UD Series 1',year:2023,low:3,high:8,cond:'Raw NM-MT',num:'#250',note:'Luke Hughes (4th overall, brother of Jack/Quinn) and Matthew Knies (Leafs). Checklist format caps value ceiling.'},
+  {id:27,player:'Lucas Raymond',type:'Young Guns',set:'2021-22 UD Series 2',year:2021,low:40,high:80,cond:'Raw NM-MT',num:null,note:'2021 4th overall pick, Detroit Red Wings. Established NHL star alongside Seider. One of the top YG cards in the collection.'},
+  {id:28,player:'Harrison Brunicke',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:29,player:'Zeev Buium',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:15,high:40,cond:'Raw NM-MT',num:null,note:'2024 first-round pick, 13th overall, Utah Hockey Club. Highly regarded offensive defenseman from Denver. Top-15 pick.'},
+  {id:30,player:'Zach Metsa',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:31,player:'Axel Sandin-Pellikka',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:15,high:40,cond:'Raw NM-MT',num:null,note:'2023 first-round pick, 8th overall, Detroit Red Wings. Highly regarded Swedish defenseman — top-10 pick.'},
+  {id:32,player:'Cam York',type:'Canvas Young Guns',set:'2021-22 UD Series 2',year:2021,low:8,high:18,cond:'Raw NM-MT',num:null,note:'2019 first-round pick, 14th overall, Philadelphia Flyers. Canvas YG trades at a discount to base.'},
+  {id:33,player:'Ty Mueller',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:34,player:'Joona Koppanen',type:'Young Guns',set:'2023-24 UD Series 1',year:2023,low:3,high:10,cond:'Raw NM-MT',num:null,note:'2019 5th round pick, Boston Bruins. Finnish forward in Liiga. Later-round pick with modest collector demand.'},
+  {id:35,player:'Daniel Misyul',type:'Young Guns',set:'2024-25 UD Series 2',year:2024,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:36,player:'Cole Caufield',type:'SPx F/X',set:'2024-25 SPx Hockey',year:2024,low:25,high:60,cond:'Raw NM-MT',num:'114/399',note:'2019 first-round pick, 15th overall, Montreal Canadiens. Hugely popular especially in Canada. /399 numbered parallel adds scarcity.'},
+  {id:37,player:'Brandon Scanlin',type:'Young Guns',set:'2024-25 UD Series 2',year:2024,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:38,player:'Hunter McKown',type:'Outburst Young Guns',set:'2023-24 UD Series 1',year:2023,low:3,high:10,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Outburst YG is a tiered subset variant of standard Young Guns.'},
+  {id:39,player:'Adam Ginning',type:'Young Guns',set:'2023-24 UD Series 1',year:2023,low:3,high:8,cond:'Raw NM-MT',num:null,note:'2020 5th round pick, 143rd overall, Vegas Golden Knights. Swedish defenseman. Lower-profile prospect.'},
+  {id:40,player:'Jeremy Swayman',type:'Rookie Materials',set:'2021-22 UD Series 2',year:2021,low:15,high:35,cond:'Raw NM-MT',num:null,note:'Boston Bruins starting goaltender. Rookie Materials = jersey relic embedded in card. Strong collector demand as an established starter.'},
+  {id:41,player:'Adam Klapka',type:'Young Guns',set:'2024-25 UD Series 2',year:2024,low:3,high:8,cond:'Raw NM-MT',num:null,note:'2019 3rd round pick, Carolina Hurricanes. Big Czech forward in the AHL. Lower-profile prospect.'},
+  {id:42,player:'Egor Afanasyev',type:'Young Guns',set:'2023-24 UD Series 1',year:2023,low:8,high:18,cond:'Raw NM-MT',num:null,note:'2020 first-round pick, 21st overall, Nashville Predators. Russian forward with moderate collector interest.'},
+  {id:43,player:'Benoit-Olivier Groulx',type:'Young Guns',set:'2021-22 UD Series 2',year:2021,low:5,high:12,cond:'Raw NM-MT',num:null,note:'2018 2nd round pick, 52nd overall, Ottawa Senators. Quebec-born forward with regional appeal.'},
+  {id:44,player:'Dawson Mercer',type:'Marquee Rookies',set:'2021-22 O-Pee-Chee',year:2021,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 18th overall, New Jersey Devils. OPC Marquee Rookies popular in Canada.'},
+  {id:45,player:'Nils Lundkvist',type:'Young Guns',set:'2021-22 UD Series 2',year:2021,low:8,high:18,cond:'Raw NM-MT',num:null,note:'2020 first-round pick, 28th overall, NY Rangers → traded to Dallas Stars. Solid NHL defenseman.'},
+  {id:46,player:'Mike Hardman',type:'Marquee Rookies',set:'2021-22 O-Pee-Chee',year:2021,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Undrafted free agent, Chicago Blackhawks. Minimal collector demand.'},
+  {id:47,player:'Cole Sillinger',type:'Marquee Rookies',set:'2021-22 O-Pee-Chee',year:2021,low:10,high:22,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 12th overall, Columbus Blue Jackets. Solid collector interest in OPC format.'},
+  {id:48,player:'Marian Studenic',type:'Marquee Rookies',set:'2021-22 O-Pee-Chee',year:2021,low:3,high:8,cond:'Raw NM-MT',num:null,note:'2018 3rd round pick, New Jersey Devils. Slovak forward. Minimal collector demand.'},
+  {id:49,player:'Jacob Peterson',type:'Young Guns',set:'2021-22 UD Series 2',year:2021,low:3,high:8,cond:'Raw NM-MT',num:null,note:'2018 3rd round pick, 76th overall, Dallas Stars. Swedish forward depth player. Minimal collector demand.'},
+  {id:50,player:'Maxwell Willman',type:'Young Guns',set:'2021-22 UD Series 2',year:2021,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Undrafted free agent, Boston Bruins. Minimal collector demand.'},
+  {id:51,player:'Gabe Perreault',type:'Young Guns',set:'2025-26 UD Series 1',year:2025,low:20,high:45,cond:'Raw NM-MT',num:null,note:'2023 first-round pick, 23rd overall, NY Rangers. Son of former NHLer Yanic Perreault. Strong prospect buzz. Past knowledge cutoff.'},
+  {id:52,player:'Jett Luchanko',type:'SPx Silver Spectrum',set:'2024-25 SPx Hockey',year:2024,low:25,high:60,cond:'Raw NM-MT',num:null,note:'2024 first-round pick, 13th overall, Toronto Maple Leafs. Being a Leaf adds massive collector demand in Canada. Silver Spectrum is a numbered parallel — check print run for precise value.'},
+  {id:53,player:'Brad Lambert',type:'SPx F/X',set:'2024-25 SPx Hockey',year:2024,low:15,high:35,cond:'Raw NM-MT',num:null,note:'2022 first-round pick, 30th overall, Winnipeg Jets. Finnish forward with strong development. SPx F/X is a premium die-cut subset.'},
+  {id:54,player:'Parker Ford',type:'Young Guns',set:'2025-26 UD Series 1',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Lower-profile prospect. Limited market data — conservative estimate.'},
+  {id:55,player:'Scott Morrow',type:'SPx Rookie',set:'2024-25 SPx Hockey',year:2024,low:10,high:22,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 27th overall, Carolina Hurricanes. Defensive prospect out of UMass. Moderate collector interest.'},
+  {id:56,player:'Brendan Brisson',type:'SPx Rookie',set:'2024-25 SPx Hockey',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 29th overall, Vegas Golden Knights. Forward developing in the AHL. Moderate collector interest.'},
+  {id:57,player:'Samuel Bolduc',type:'Allure Rookie',set:'2023-24 UD Allure',year:2023,low:5,high:15,cond:'Raw NM-MT',num:null,note:'2020 2nd round pick, 57th overall, NY Islanders. Big defenseman. Allure is a boutique product with lower print runs than Series 1/2.'},
+  {id:58,player:'Connor Hellebuyck',type:'Allure Base',set:'2023-24 UD Allure',year:2023,low:8,high:20,cond:'Raw NM-MT',num:null,note:'Two-time Vezina Trophy winner (2019-20, 2023-24), Winnipeg Jets starting goaltender. Strong collector demand even on base cards.'},
+  {id:59,player:'Will Cuylle',type:'Allure Rookie',set:'2023-24 UD Allure',year:2023,low:8,high:18,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 30th overall, NY Rangers. Power forward developing in the NHL. Allure rookie carries boutique premium.'},
+  {id:60,player:'Matthew Poitras',type:'Allure Rookie',set:'2023-24 UD Allure',year:2023,low:8,high:20,cond:'Raw NM-MT',num:null,note:'2023 2nd round pick, 39th overall, Boston Bruins. Made the Bruins roster straight from camp in 2023-24, impressed before injury. Growing collector demand.'},
+  {id:61,player:'Ilya Sorokin',type:'Colour Flow',set:'2023-24 UD Allure',year:2023,low:15,high:35,cond:'Raw NM-MT',num:null,note:'Elite NY Islanders goaltender and fan favourite. Colour Flow is a premium insert subset in UD Allure with strong visual appeal and scarcity.'},
+  {id:62,player:'Sidney Crosby',type:'Colour Flow',set:'2023-24 UD Allure',year:2023,low:30,high:80,cond:'Raw NM-MT',num:null,note:'One of the greatest players in NHL history, Pittsburgh Penguins captain. One of the most collected hockey players of all time. Any Crosby card commands a premium.'},
+  {id:63,player:'Owen Beck',type:'Allure Rookie',set:'2023-24 UD Allure',year:2023,low:5,high:15,cond:'Raw NM-MT',num:null,note:'2022 2nd round pick, 33rd overall, Montreal Canadiens. Center prospect with regional appeal in Quebec.'},
+  {id:64,player:'Daniel Gushchin',type:'Allure Rookie',set:'2023-24 UD Allure',year:2023,low:3,high:10,cond:'Raw NM-MT',num:null,note:'2021 3rd round pick, 96th overall, San Jose Sharks. Russian forward developing in the AHL. Lower-profile prospect.'},
+  {id:65,player:'Marco Kasper',type:'Allure Rookie',set:'2023-24 UD Allure',year:2023,low:12,high:30,cond:'Raw NM-MT',num:null,note:'2022 first-round pick, 8th overall, Detroit Red Wings. Highly regarded Austrian center — top-10 pick with solid collector interest.'},
+  {id:66,player:'Alex Ovechkin',type:'Electric City',set:'2024-25 UD Series 2',year:2024,low:25,high:65,cond:'Raw NM-MT',num:null,note:'All-time NHL goals leader, broke Gretzky\'s record in 2024-25. Washington Capitals legend. Any Ovechkin card from this historic season carries a significant premium.'},
+  {id:67,player:'Sebastian Aho',type:'Electric City',set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'Carolina Hurricanes top-line center. Solid NHL star with moderate collector demand. Electric City insert.'},
+  {id:68,player:'William Eklund',type:'Electric City',set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 7th overall, San Jose Sharks. Swedish forward developing into a solid NHL player.'},
+  {id:69,player:'Matthew Barzal',type:'Electric City',set:'2024-25 UD Series 2',year:2024,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2018 Calder Trophy winner, NY Islanders star. One of the most skilled players in the league. Strong collector demand.'},
+  {id:70,player:'Lucas Raymond',type:'Electric City',set:'2024-25 UD Series 2',year:2024,low:12,high:28,cond:'Raw NM-MT',num:null,note:'Detroit Red Wings star — also in collection as 2021-22 Young Guns (#27). Established NHL star with growing collector base.'},
+  {id:71,player:'Philipp Grubauer',type:"Ooh-Là-Là",set:'2024-25 UD Series 2',year:2024,low:3,high:10,cond:'Raw NM-MT',num:null,note:'Seattle Kraken goaltender. Solid starter but modest collector demand. Ooh-Là-Là is an insert subset in UD Series 2.'},
+  {id:72,player:'Dustin Wolf',type:"Ooh-Là-Là",set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'7th round pick who became Calgary Flames starter — similar late-round-to-starter story as Devon Levi. Growing collector demand.'},
+  {id:73,player:'Jeremy Swayman',type:"Ooh-Là-Là",set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'Also in collection as 2021-22 Rookie Materials (#40). Popular Bruins starter with strong fan following. Separate insert card.'},
+  {id:74,player:'Easton Cowan',type:'Fluorescence',set:'2025-26 UD Series 2',year:2025,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2024 first-round pick, 28th overall, Toronto Maple Leafs. London Knights standout. Leafs prospect = big Canadian collector demand. Past knowledge cutoff.'},
+  {id:75,player:'Logan Stankoven',type:'Bound for Glory',set:'2024-25 SPx Hockey',year:2024,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2021 2nd round pick, 47th overall, Dallas Stars. Fan favourite and emerging NHL contributor. Bound for Glory is a premium SPx insert.'},
+  {id:76,player:'Connor / Morrissey',type:'On Tour',set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'Kyle Connor & Josh Morrissey duo card — two Winnipeg Jets stars. Morrissey is a Norris Trophy contender. Duo insert format.'},
+  {id:77,player:'Aho / Svechnikov',type:'On Tour',set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'Sebastian Aho & Andrei Svechnikov duo — two Carolina Hurricanes stars. Svechnikov was 2018 2nd overall pick.'},
+  {id:78,player:'Barkov / Tkachuk',type:'On Tour',set:'2024-25 UD Series 2',year:2024,low:12,high:30,cond:'Raw NM-MT',num:null,note:'Aleksander Barkov & Matthew Tkachuk — two Florida Panthers stars and key figures in their Stanley Cup run. Strong duo collector appeal.'},
+  {id:79,player:'Kucherov / Hedman',type:'On Tour',set:'2024-25 UD Series 2',year:2024,low:15,high:35,cond:'Raw NM-MT',num:null,note:'Nikita Kucherov (Hart Trophy 2023-24, record-breaking season) & Victor Hedman (Norris Trophy winner). Two Tampa Bay Lightning legends — strong duo.'},
+  {id:80,player:'Nick Suzuki',type:'Playlist',set:'2024-25 UD Series 2',year:2024,low:8,high:20,cond:'Raw NM-MT',num:null,note:'Captain of the Montreal Canadiens. One of the most popular players in Canada — huge collector demand, especially in Quebec.'},
+  {id:81,player:'Cale Makar',type:'Playlist',set:'2024-25 UD Series 2',year:2024,low:15,high:40,cond:'Raw NM-MT',num:null,note:'Back-to-back Norris Trophy winner, Conn Smythe winner, Colorado Avalanche superstar. One of the best defensemen in NHL history. Top-tier collector name.'},
+  {id:82,player:'Travis Konecny',type:"200' x 85'",set:'2023-24 UD Series 1',year:2023,low:5,high:15,cond:'Raw NM-MT',num:null,note:'Philadelphia Flyers top scorer. 2015 first-round pick, 24th overall. 200\'x85\' refers to hockey rink dimensions — a classic UD insert.'},
+  {id:83,player:'Vincent Desharnais',type:"200' x 85'",set:'2023-24 UD Series 1',year:2023,low:3,high:8,cond:'Raw NM-MT',num:null,note:'Undrafted Oilers defenseman. Lower-profile depth player. Some regional appeal in Quebec. Minimal collector demand.'},
+  {id:84,player:'Taylor Hall',type:'Deluxe',set:'2023-24 UD Series 1',year:2023,low:15,high:35,cond:'Raw NM-MT',num:'128/250',note:'2010 #1 overall pick, Hart Trophy winner 2017-18, New Jersey Devils. Deluxe is a numbered /250 parallel. Hall\'s name value drives this above average.'},
+  {id:85,player:'Brady Tkachuk',type:'SPx Base',set:'2024-25 SPx Hockey',year:2024,low:8,high:18,cond:'Raw NM-MT',num:null,note:'2018 first-round pick, 10th overall, Ottawa Senators captain. Physical power forward and fan favourite. Base SPx card for an established star.'},
+  {id:89,player:'Matthew Knies',type:'Artifacts Sky Blue',set:'2025-26 Artifacts Hockey',year:2025,low:10,high:25,cond:'Raw NM-MT',num:null,note:'2022 first-round pick, 57th overall, Toronto Maple Leafs. Breakout winger with huge upside. Sky Blue is a parallel in UD Artifacts — more scarce than the base version. Past knowledge cutoff — verify current pricing.'},
+  {id:88,player:'Mikko Rantanen',type:'Allure Yellow Taxi',set:'2023-24 UD Allure',year:2023,low:15,high:40,cond:'Raw NM-MT',num:null,note:'Hart Trophy winner 2024-25, Colorado Avalanche star winger (now Carolina Hurricanes). Yellow Taxi is a sought-after short-print insert in UD Allure. Rantanen\'s elite status drives strong demand.'},
+  {id:87,player:'Tyson Foerster',type:'Debut Dates',set:'2023-24 UD Series 1',year:2023,low:3,high:8,cond:'Raw NM-MT',num:null,note:'2021 first-round pick, 23rd overall, Philadelphia Flyers. Power forward showing promise in Philly. Debut Dates insert from Series 1.'},
+  {id:86,player:'Luke Hughes',type:'Debut Dates',set:'2023-24 UD Series 1',year:2023,low:8,high:20,cond:'Raw NM-MT',num:null,note:'2022 4th overall pick, New Jersey Devils. Younger brother of Jack and Quinn Hughes. Debut Dates is a short-print insert documenting his NHL debut. Strong collector interest given the Hughes family name.'},
+  {id:86,player:'Artur Suniev',type:'Young Guns',set:'2025-26 UD Series 2',year:2025,low:3,high:8,cond:'Raw NM-MT',num:null,note:'⚠️ Player name unverified — spelling on card may differ. 2025-26 prospect, past knowledge cutoff. Conservative estimate pending confirmation.'},
+  {id:87,player:'Paul Skenes',type:'Bowman Prospect',set:'2023 Bowman Chrome',year:2023,low:150,high:350,cond:'PSA 10',num:null,note:'⚾ Baseball crossover card. 2023 #1 overall MLB Draft pick, Pittsburgh Pirates. Certified PSA 10 Gem Mint — slabbed and cased. Verified grade commands a strong premium over raw copies. One of the most hyped prospects in years, debuted May 2024 and lived up to expectations.'},
+  {id:88,player:'Celebrini / Michkov',type:'Checklist',set:'2024-25 UD Series 1',year:2024,low:5,high:15,cond:'Raw NM-MT',num:null,note:'Young Guns Checklist featuring Macklin Celebrini (#1 overall 2024, San Jose Sharks) and Matvei Michkov (7th overall 2023, Philadelphia Flyers). Two of the most hyped rookies in recent years. Checklists cap the value ceiling but the names give it more demand than a typical checklist.'},
+  {id:89,player:'Celebrini / W. Smith',type:'Young Guns Teammates',set:'2024-25 UD Series 1',year:2024,low:15,high:40,cond:'Raw NM-MT',num:null,note:'Macklin Celebrini (#1 overall 2024) and Will Smith (#4 overall 2023) — two San Jose Sharks top picks on a Teammates Young Guns duo card. Both are elite prospects and Sharks cornerstones. Strong collector demand for this pairing.'},
+];
+
+// Remove duplicate Crosby — card 85 was logged twice, let's handle that
+// Actually card 62 and 85 are both Sidney Crosby Colour Flow. Let me keep both as the user added them separately.
+// Actually looking back at the conversation, card 62 is the Crosby Colour Flow. Card 85 is Taylor Hall Deluxe. I made an error above. Let me fix the array.
+
+// Fix: card 85 should be Taylor Hall, not Crosby. Already correct above at id:84.
+// The CARDS array above has id:84 as Taylor Hall and id:85 as a mistaken duplicate. Let me remove id:85.
+
+const OWNER_SLACK_ID = 'U06HATWMXKN';
+const OWNER_EMAIL    = 'austin.sonnencoote@shopify.com';
+const SITE_URL       = 'https://austin-hockey-cards.quick.shopify.io';
+
+// DB cards: approved ones go into dbCards, pending into pendingCards
+let dbCards      = [];
+let pendingCards = [];
+let nextId = Math.max(...CARDS.map(c=>c.id)) + 1;
+let currentUserEmail = null;
+
+function getCards(){ return [...CARDS, ...dbCards]; }
+function getColl(){ return quick.db.collection('cards'); }
+
+async function loadDbCards(){
+  try{
+    currentUserEmail = (await quick.id.waitForUser()).email;
+    const docs = await getColl().find();
+    dbCards      = docs.filter(d=>d.status==='approved').map(d=>({...d, dbId:d._id}));
+    pendingCards = docs.filter(d=>d.status==='pending').map(d=>({...d, dbId:d._id}));
+    refreshAll();
+    if(currentUserEmail===OWNER_EMAIL) renderPendingTray();
+    await handleApprovalUrl();
+  }catch(e){ console.warn('DB load failed',e); }
+}
+
+async function handleApprovalUrl(){
+  const params = new URLSearchParams(location.search);
+  const approveId = params.get('approve');
+  const rejectId  = params.get('reject');
+  if(!approveId && !rejectId) return;
+  if(currentUserEmail !== OWNER_EMAIL){
+    history.replaceState({},'',location.pathname); return;
+  }
+  try{
+    if(approveId){
+      await getColl().update(approveId, {status:'approved'});
+      const card = pendingCards.find(c=>c.dbId===approveId);
+      if(card){ pendingCards=pendingCards.filter(c=>c.dbId!==approveId); dbCards.push(card); }
+      showToast('Card approved and added to the vault!','success');
+    }
+    if(rejectId){
+      await getColl().delete(rejectId);
+      pendingCards=pendingCards.filter(c=>c.dbId!==rejectId);
+      showToast('Card rejected and removed.','error');
+    }
+  }catch(e){ showToast('Action failed: '+e.message,'error'); }
+  history.replaceState({},'',location.pathname);
+  refreshAll();
+  if(currentUserEmail===OWNER_EMAIL) renderPendingTray();
+}
+
+function renderPendingTray(){
+  let tray = document.getElementById('pending-tray');
+  if(!pendingCards.length){
+    if(tray) tray.remove(); return;
+  }
+  if(!tray){
+    tray = document.createElement('div');
+    tray.id='pending-tray';
+    document.getElementById('chartsSection').before(tray);
+  }
+  tray.innerHTML=`
+    <div style="margin:20px 24px 0;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;overflow:hidden;">
+      <div style="background:linear-gradient(90deg,#ea580c,#f97316);padding:12px 18px;display:flex;align-items:center;gap:8px;">
+        <span style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:#fff;">Pending Approval (${pendingCards.length})</span>
+        <span style="font-size:.7rem;color:rgba(255,255,255,.7);margin-left:auto;">Only visible to you</span>
+      </div>
+      ${pendingCards.map(c=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #fed7aa;">
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:.88rem;color:#1a1a2e;">${c.player}</div>
+            <div style="font-size:.7rem;color:#7c2d12;">${c.type} · ${c.set} · $${c.low}–$${c.high}</div>
+            ${c.note?`<div style="font-size:.65rem;color:#9a3412;margin-top:2px;">${c.note}</div>`:''}
+          </div>
+          <button onclick="approveCard('${c.dbId}')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.72rem;font-weight:700;cursor:pointer;">Approve</button>
+          <button onclick="rejectCard('${c.dbId}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.72rem;font-weight:700;cursor:pointer;">Reject</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function approveCard(dbId){
+  try{
+    await getColl().update(dbId, {status:'approved'});
+    const card = pendingCards.find(c=>c.dbId===dbId);
+    if(card){ pendingCards=pendingCards.filter(c=>c.dbId!==dbId); dbCards.push(card); }
+    showToast('Card approved!','success');
+    refreshAll(); renderPendingTray();
+  }catch(e){ showToast('Failed: '+e.message,'error'); }
+}
+
+async function rejectCard(dbId){
+  if(!confirm('Reject and delete this card?')) return;
+  try{
+    await getColl().delete(dbId);
+    pendingCards=pendingCards.filter(c=>c.dbId!==dbId);
+    showToast('Card rejected.','error');
+    refreshAll(); renderPendingTray();
+  }catch(e){ showToast('Failed: '+e.message,'error'); }
+}
+
+async function saveCard(){
+  const player = document.getElementById('f-player').value.trim();
+  const type   = document.getElementById('f-type').value.trim();
+  const set    = document.getElementById('f-set').value.trim();
+  const yearRaw= document.getElementById('f-year').value.trim();
+  const lowRaw = document.getElementById('f-low').value.trim();
+  const highRaw= document.getElementById('f-high').value.trim();
+  const cond   = document.getElementById('f-cond').value.trim() || 'Raw NM-MT';
+  const num    = document.getElementById('f-num').value.trim() || null;
+  const note   = document.getElementById('f-note').value.trim() || '';
+  const err    = document.getElementById('fm-err');
+
+  const year = Number(yearRaw);
+  const low  = Number(lowRaw);
+  const high = Number(highRaw);
+
+  const missing = [];
+  if(!player) missing.push('Player');
+  if(!type)   missing.push('Card Type');
+  if(!set)    missing.push('Set');
+  if(!yearRaw || !Number.isFinite(year)) missing.push('Year');
+  if(!lowRaw  || !Number.isFinite(low))  missing.push('Low Value');
+  if(!highRaw || !Number.isFinite(high)) missing.push('High Value');
+
+  if(missing.length){ err.textContent='Missing: '+missing.join(', '); err.style.display='block'; return; }
+  if(low>high){ err.textContent='Low value must be ≤ High value.'; err.style.display='block'; return; }
+  err.style.display='none';
+
+  const btn = document.getElementById('fm-save-btn');
+  btn.classList.add('fm-saving'); btn.textContent='Submitting...';
+
+  try{
+    const id = nextId++;
+    const submitter = currentUserEmail || 'unknown';
+    const card = {id,player,type,set,year,low,high,cond,num,note,status:'pending',submitter};
+    const doc = await getColl().create(card);
+    const dbId = doc._id;
+
+    // Slack DM to owner
+    const approveUrl = `${SITE_URL}?approve=${dbId}`;
+    const rejectUrl  = `${SITE_URL}?reject=${dbId}`;
+    const blocks = quick.slack.createBlocks()
+      .header('🏒 New Card Submission')
+      .section(`*${player}* — ${type}`)
+      .fields([
+        {title:'Set',    value:set},
+        {title:'Year',   value:String(year)},
+        {title:'Value',  value:`$${low}–$${high}`},
+        {title:'Condition', value:cond},
+        ...(num ? [{title:'Card #', value:num}] : []),
+        {title:'Submitted by', value:submitter},
+      ])
+      .section(note ? `📝 ${note}` : '_No notes provided_')
+      .divider()
+      .section(`<${approveUrl}|✅ Approve Card>   |   <${rejectUrl}|❌ Reject Card>`)
+      .build();
+    await quick.slack.sendMessage(OWNER_SLACK_ID, `New card submission: ${player} – ${type}`, {blocks});
+
+    pendingCards.push({...card, dbId});
+    if(!TC[type]) TC[type] = `hsl(${Math.random()*360|0},60%,55%)`;
+    closeAddForm();
+    showToast('Card submitted for approval! You\'ll get a Slack message shortly.','success');
+    if(currentUserEmail===OWNER_EMAIL) renderPendingTray();
+  }catch(e){
+    err.textContent='Submit failed: '+e.message;
+    err.style.display='block';
+  }finally{
+    btn.classList.remove('fm-saving'); btn.textContent='Save Card';
+  }
+}
+
+async function deleteCard(dbId){
+  if(!confirm('Remove this card from your collection?'))return;
+  try{
+    await getColl().delete(dbId);
+    dbCards = dbCards.filter(c=>c.dbId!==dbId);
+    closeMo();
+    refreshAll();
+  }catch(e){ alert('Delete failed: '+e.message); }
+}
+
+function showToast(msg, type='success'){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.textContent=msg;
+  t.style.cssText=`position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:.8rem;font-weight:600;z-index:9999;transition:opacity .3s;background:${type==='success'?'#16a34a':'#dc2626'};color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);`;
+  t.style.opacity='1';
+  clearTimeout(t._to); t._to=setTimeout(()=>t.style.opacity='0',3000);
+}
+
+function refreshAll(){
+  buildStats();buildFilters();buildTop10();
+  Chart.getChart('chartType')?.destroy();
+  Chart.getChart('chartYear')?.destroy();
+  buildCharts();
+  renderCards();
+}
+
+function avg(c){return(c.low+c.high)/2;}
+
+// STATS
+function animCount(el,target,pre='',dec=0){
+  const s=performance.now(),d=1200;
+  const step=ts=>{const p=Math.min((ts-s)/d,1),e=1-Math.pow(1-p,3);
+    el.textContent=pre+(e*target).toFixed(dec);if(p<1)requestAnimationFrame(step);
+    else el.textContent=pre+target.toFixed(dec);};requestAnimationFrame(step);}
+
+function buildStats(){
+  const cards=getCards();
+  const total=cards.reduce((s,c)=>s+avg(c),0);
+  const top=[...cards].sort((a,b)=>avg(b)-avg(a))[0];
+  const types=new Set(cards.map(c=>c.type)).size;
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat"><div class="stat-icon">📦</div><div class="stat-val" id="s1">0</div><div class="stat-lbl">Total Cards</div></div>
+    <div class="stat"><div class="stat-icon">💰</div><div class="stat-val" id="s2">$0</div><div class="stat-lbl">Est. Collection Value</div></div>
+    <div class="stat"><div class="stat-icon">🃏</div><div class="stat-val" id="s3">0</div><div class="stat-lbl">Card Types</div></div>
+    <div class="stat"><div class="stat-icon">🏆</div><div class="stat-val" id="s4">$0</div><div class="stat-lbl">Top Card Avg</div></div>`;
+  animCount(document.getElementById('s1'),cards.length,'',0);
+  animCount(document.getElementById('s2'),total,'$',0);
+  animCount(document.getElementById('s3'),types,'',0);
+  animCount(document.getElementById('s4'),avg(top),'$',0);
+  document.getElementById('hbadge').textContent=cards.length+' Cards';
+}
+
+// FILTERS
+let activeFilter='All';
+function buildFilters(){
+  const cards=getCards();
+  const types=['All',...Object.keys(TC).filter(t=>cards.some(c=>c.type===t))];
+  document.getElementById('chips').innerHTML=types.map(t=>{
+    const n=t==='All'?cards.length:cards.filter(c=>c.type===t).length;
+    return`<button class="chip${t===activeFilter?' active':''}" onclick="setFilter('${t.replace(/'/g,"\\'")}')">${t} <span style="opacity:.55">${n}</span></button>`;
+  }).join('');
+}
+function setFilter(t){activeFilter=t;buildFilters();renderCards();
+  document.getElementById('top10').style.display=t==='All'?'':'none';
+  document.getElementById('chartsSection').style.display=t==='All'?'':'none';}
+
+// TOP 10
+function buildTop10(){
+  const cards=getCards();
+  const sorted=[...cards].sort((a,b)=>avg(b)-avg(a)).slice(0,10);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('top10').innerHTML=`
+    <div class="top10-head"><span>🏆</span><span class="top10-title">Top 10 Most Valuable</span><span class="top10-sub">Click row for full details</span></div>
+    ${sorted.map((c,i)=>`
+      <div class="t10r" onclick="openModal(${c.id})">
+        ${i<3?`<span class="t10-rank" style="color:${['#ffd700','#c0c0c0','#cd7f32'][i]}">${medals[i]}</span>`:`<span class="t10-rank">${i+1}</span>`}
+        <div class="t10-info"><div class="t10-player">${c.player}</div><div class="t10-meta">${c.type} · ${c.set}</div></div>
+        <div class="t10-val">$${avg(c).toFixed(2)}</div>
+      </div>`).join('')}`;
+}
+
+// CHARTS
+function buildCharts(){
+  const cards=getCards();
+  // By type
+  const typeMap={};
+  cards.forEach(c=>{typeMap[c.type]=(typeMap[c.type]||0)+avg(c);});
+  const tKeys=Object.keys(typeMap).sort((a,b)=>typeMap[b]-typeMap[a]);
+  new Chart(document.getElementById('chartType'),{
+    type:'bar',
+    data:{labels:tKeys,datasets:[{data:tKeys.map(k=>typeMap[k].toFixed(2)),
+      backgroundColor:tKeys.map(k=>TC[k]||'#4fc3f7'),borderWidth:0,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+parseFloat(c.raw).toFixed(2)}}},
+      scales:{x:{ticks:{color:'#7aa7c7',font:{size:10},callback:v=>'$'+v},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{ticks:{color:'#e8f4fd',font:{size:9}},grid:{display:false}}}}});
+  // By year
+  const yearMap={};
+  cards.forEach(c=>{yearMap[c.year]=(yearMap[c.year]||0)+1;});
+  const yKeys=Object.keys(yearMap).sort();
+  new Chart(document.getElementById('chartYear'),{
+    type:'bar',
+    data:{labels:yKeys.map(y=>y+'-'+(parseInt(y)+1).toString().slice(-2)),
+      datasets:[{data:yKeys.map(k=>yearMap[k]),backgroundColor:'#4fc3f7',borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#7aa7c7',font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:'#7aa7c7',font:{size:10}},grid:{color:'rgba(255,255,255,0.05)'}}}}});
+}
+
+// CARD GRID
+const flipped=new Set();
+function renderCards(){
+  const cards=getCards();
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const s=document.getElementById('sortSel').value;
+  let list=cards.filter(c=>{
+    const mt=activeFilter==='All'||c.type===activeFilter;
+    const ms=!q||c.player.toLowerCase().includes(q)||c.type.toLowerCase().includes(q)||c.set.toLowerCase().includes(q);
+    return mt&&ms;});
+  if(s==='vd')list.sort((a,b)=>avg(b)-avg(a));
+  else if(s==='va')list.sort((a,b)=>avg(a)-avg(b));
+  else if(s==='pa')list.sort((a,b)=>a.player.localeCompare(b.player));
+  else if(s==='yd')list.sort((a,b)=>b.year-a.year);
+  else if(s==='ya')list.sort((a,b)=>a.year-b.year);
+  const allS=[...cards].sort((a,b)=>avg(b)-avg(a));
+  const rm={};allS.forEach((c,i)=>rm[c.id]=i+1);
+  document.getElementById('secTitle').textContent=activeFilter==='All'?'All Cards':activeFilter;
+  document.getElementById('secCount').textContent=list.length+' card'+(list.length!==1?'s':'');
+  const g=document.getElementById('grid');
+  if(!list.length){g.innerHTML='<div class="no-res"><div class="no-res-icon">🏒</div><div>No cards found</div></div>';return;}
+  g.innerHTML=list.map(c=>{
+    const col=TC[c.type]||'#4fc3f7';
+    const r=rm[c.id];
+    const med=r===1?'🥇':r===2?'🥈':r===3?'🥉':'#'+r;
+    return`<div class="cw${flipped.has(c.id)?' flipped':''}" id="cw${c.id}" style="--cc:${col}" onclick="toggleFlip(${c.id})">
+      <div class="ci">
+        <div class="cf">
+          <div class="stripe"></div><div class="shine"></div>
+          ${c.img?`<img class="c-img" src="${c.img}" alt="${c.player}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="c-img-ph" style="display:none">🏒</div>`:`<div class="c-img-ph">🏒</div>`}
+          <div class="c-type">${c.type}</div>
+          <div class="c-player">${c.player}</div>
+          <div class="c-set">${c.set}</div>
+          ${c.num?`<div class="num-pill">🔢 ${c.num}</div>`:''}
+          <div class="c-bot">
+            <div><div class="c-avg">$${avg(c).toFixed(2)}</div><div class="c-avg-lbl">Est. Avg</div></div>
+            <div class="c-rank">${med}</div>
+          </div>
+          <div class="fhint">flip 🔄</div>
+        </div>
+        <div class="cb">
+          <div class="cb-head">${c.player}</div>
+          <div class="cb-row"><span class="cb-lbl">Set</span><span class="cb-val">${c.set}</span></div>
+          <div class="cb-row"><span class="cb-lbl">Type</span><span class="cb-val">${c.type}</span></div>
+          <div class="cb-row"><span class="cb-lbl">Cond.</span><span class="cb-val">${c.cond}</span></div>
+          ${c.num?`<div class="cb-row"><span class="cb-lbl">No.</span><span class="cb-val">${c.num}</span></div>`:''}
+          <div class="cb-row"><span class="cb-lbl">Range</span><span class="cb-val">$${c.low}–$${c.high}</span></div>
+          <div class="cb-note">${c.note}</div>
+          <div class="cb-valbig"><div class="bv">$${avg(c).toFixed(2)}</div><div class="br">estimated avg</div></div>
+          <div class="cb-bhint">tap to flip back</div>
+        </div>
+      </div>
+    </div>`}).join('');
+}
+function toggleFlip(id){
+  flipped.has(id)?flipped.delete(id):flipped.add(id);
+  document.getElementById('cw'+id)?.classList.toggle('flipped',flipped.has(id));}
+
+// MODAL
+function openModal(id){
+  const cards=getCards();
+  const c=cards.find(x=>x.id===id);if(!c)return;
+  const col=TC[c.type]||'#4fc3f7';
+  const allS=[...cards].sort((a,b)=>avg(b)-avg(a));
+  const r=allS.findIndex(x=>x.id===id)+1;
+  const rl=r===1?'🥇 #1':r===2?'🥈 #2':r===3?'🥉 #3':'#'+r+' of '+cards.length;
+  document.getElementById('mb').style.setProperty('--mc',col);
+  document.getElementById('mb').innerHTML=`
+    <div class="mb-banner" style="background:linear-gradient(135deg,${col}cc,${col}66)">
+      <button class="mb-close" onclick="closeMo()">✕</button>
+      <div class="mb-type">${c.type}</div>
+      <div class="mb-player">${c.player}</div>
+      <div class="mb-set">${c.set}</div>
+    </div>
+    <div class="mb-body">
+      <div class="mb-vrow">
+        <div><div class="mb-avg">$${avg(c).toFixed(2)}</div><div class="mb-avg-lbl">Estimated Average Value</div><div class="mb-range">Range: $${c.low} – $${c.high}</div></div>
+        <div class="mb-rank">${rl}</div>
+      </div>
+      <div class="mb-fields">
+        <div class="mb-field"><label>Set</label><span>${c.set}</span></div>
+        <div class="mb-field"><label>Condition</label><span>${c.cond}</span></div>
+        <div class="mb-field"><label>Type</label><span>${c.type}</span></div>
+        <div class="mb-field"><label>Year</label><span>${c.year}–${c.year+1}</span></div>
+        ${c.num?`<div class="mb-field"><label>Card # / Serial</label><span>${c.num}</span></div>`:''}
+      </div>
+      <div class="mb-note">📝 ${c.note}</div>
+      <div class="mb-disc">⚠️ Values estimated from comparable sales data to Aug 2025. Verify on 130point.com or eBay sold listings for current pricing.</div>
+      ${c.dbId?`<button class="mb-delete" onclick="deleteCard('${c.dbId}')">🗑 Remove Card</button>`:''}
+    </div>`;
+  document.getElementById('mo').classList.add('open');}
+function closeMo(){document.getElementById('mo').classList.remove('open');}
+function handleMO(e){if(e.target===document.getElementById('mo'))closeMo();}
+
+function openAddForm(){
+  // Populate type datalist with known types
+  document.getElementById('type-list').innerHTML=Object.keys(TC).map(t=>`<option value="${t}">`).join('');
+  // Clear fields
+  ['f-player','f-type','f-set','f-year','f-num','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-cond').value='Raw NM-MT';
+  document.getElementById('f-low').value='';
+  document.getElementById('f-high').value='';
+  document.getElementById('fm-err').style.display='none';
+  document.getElementById('fm').classList.add('open');
+  setTimeout(()=>document.getElementById('f-player').focus(),100);
+}
+function closeAddForm(){document.getElementById('fm').classList.remove('open');}
+function handleFM(e){if(e.target===document.getElementById('fm'))closeAddForm();}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeMo();closeAddForm();}
+});
+
+// INIT
+buildStats();buildFilters();buildTop10();buildCharts();renderCards();
+loadDbCards();
+</script>
+</body>
+</html>
