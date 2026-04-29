@@ -6,46 +6,6 @@
 <title>🏒 Hockey Card Vault</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/client/quick.js"></script>
-<style>
-#pw-gate{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#1a1a2e 0%,#0d1b2e 100%);display:flex;align-items:center;justify-content:center;}
-#pw-box{background:#fff;border-radius:16px;padding:48px 40px;text-align:center;max-width:360px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.4);}
-#pw-box h2{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a1a2e;margin-bottom:4px;letter-spacing:1px;}
-#pw-box p{font-size:13px;color:#7a9ab8;margin-bottom:24px;}
-#pw-input{width:100%;padding:12px 16px;border:2px solid #e4ecf4;border-radius:10px;font-size:15px;outline:none;transition:border .2s;}
-#pw-input:focus{border-color:#1565c0;}
-#pw-input.shake{animation:shake .3s;}
-#pw-btn{margin-top:14px;width:100%;padding:13px;background:#c8102e;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:background .2s;}
-#pw-btn:hover{background:#8b0b1f;}
-#pw-error{margin-top:10px;font-size:13px;color:#c8102e;min-height:18px;}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-</style>
-<script>
-(function(){
-  var h='5e39d04b7c1e2a9f8b6d3c0a4f2e7b1d9c5a8e3f6b0d2c7a4e9f1b8d5c3a6e0';
-  function hash(s){var h=0;for(var i=0;i<s.length;i++){h=(Math.imul(31,h)+s.charCodeAt(i))|0;}return h;}
-  var stored=hash('Braves23!');
-  document.addEventListener('DOMContentLoaded',function(){
-    var gate=document.getElementById('pw-gate');
-    var input=document.getElementById('pw-input');
-    var btn=document.getElementById('pw-btn');
-    var err=document.getElementById('pw-error');
-    if(sessionStorage.getItem('unlocked')==='1'){gate.style.display='none';return;}
-    function tryUnlock(){
-      if(input.value==='Braves23!'){
-        sessionStorage.setItem('unlocked','1');
-        gate.style.display='none';
-      } else {
-        err.textContent='Incorrect password. Try again.';
-        input.classList.add('shake');
-        setTimeout(function(){input.classList.remove('shake');},300);
-        input.value='';input.focus();
-      }
-    }
-    btn.addEventListener('click',tryUnlock);
-    input.addEventListener('keydown',function(e){if(e.key==='Enter')tryUnlock();});
-  });
-})();
-</script>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap');
 :root{--ice:#1a1a2e;--red:#c8102e;--red2:#8b0b1f;--navy:#f0f4f8;--navy2:#e4ecf4;--navy3:#dce6f0;--blue:#c8d8e8;--accent:#1565c0;--gold:#ffd700;--muted:#4a6a8a;--dim:#7a9ab8;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -223,15 +183,6 @@ footer{position:relative;z-index:1;text-align:center;padding:18px;font-size:.67r
 </style>
 </head>
 <body>
-<div id="pw-gate">
-  <div id="pw-box">
-    <h2>🏒 Hockey Card Vault</h2>
-    <p>Enter the password to continue</p>
-    <input id="pw-input" type="password" placeholder="Password" autocomplete="off" />
-    <button id="pw-btn">Unlock</button>
-    <div id="pw-error"></div>
-  </div>
-</div>
 
 <!-- ICE RINK SVG BACKGROUND -->
 <svg id="rink-bg" viewBox="0 0 200 85" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
